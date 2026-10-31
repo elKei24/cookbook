@@ -108,10 +108,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR AGPL-3.0-or-later
         </NcActions>
         <!-- Overflow buttons (3-dot menu) -->
         <NcActions
-            v-if="isRecipe || isEdit"
+            v-if="isRecipe || isEdit || (isCreate && assistantAvailable)"
             :force-menu="true"
             class="overflow-menu"
         >
+            <NcActionButton
+                v-if="(isEdit || isCreate) && assistantAvailable"
+                class="action-button"
+                :aria-label="t('cookbook', 'Edit with Assistant')"
+                @click="openAssistantDialog()"
+            >
+                {{ t('cookbook', 'Edit with Assistant') }}
+                <template #icon>
+                    <CreationIcon :size="20" />
+                </template>
+            </NcActionButton>
             <NcActionButton
                 v-if="isEdit"
                 :icon="
@@ -202,6 +213,7 @@ import FilterIcon from 'icons/FilterOutline.vue';
 import PrinterIcon from 'icons/Printer.vue';
 import AbortIcon from 'icons/Close.vue';
 import ContentDuplicateIcon from 'icons/ContentDuplicate.vue';
+import CreationIcon from 'icons/Creation.vue';
 import SearchIcon from 'icons/Magnify.vue';
 
 import helpers from 'cookbook/js/helper';
@@ -214,6 +226,7 @@ import LocationIndicator from './LocationIndicator.vue';
 import ModeIndicator from './ModeIndicator.vue';
 import { useIsMobile } from '@nextcloud/vue/composables/useIsMobile';
 import { useLegacyStore } from '../../store';
+import { useAssistant } from '../../composables/useAssistant';
 import emitter from '../../bus';
 
 const t = window.t;
@@ -221,6 +234,7 @@ const isMobile = useIsMobile();
 const route = useRoute();
 const routeId = computed(() => String(route.params.id ?? ''));
 const legacyStore = useLegacyStore();
+const { isAvailable: assistantAvailable } = useAssistant();
 
 const filterValue = ref('');
 
@@ -326,6 +340,10 @@ const reloadRecipeView = () => {
 
 const saveChanges = () => {
     emitter.emit('saveRecipe');
+};
+
+const openAssistantDialog = () => {
+    emitter.emit('openAssistantDialog');
 };
 
 const search = (e: Event) => {

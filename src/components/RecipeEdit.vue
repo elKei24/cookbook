@@ -124,6 +124,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR AGPL-3.0-or-later
                 :suggestion-options="allRecipeOptions"
             />
             <div class="cookbook-footer">
+                <NcButton
+                    v-if="assistantAvailable"
+                    variant="secondary"
+                    :aria-label="t('cookbook', 'Edit with Assistant')"
+                    @click="assistantDialogOpen = true"
+                >
+                    <template #icon>
+                        <CreationIcon :size="20" />
+                    </template>
+                    {{ t('cookbook', 'Edit with Assistant') }}
+                </NcButton>
                 <button class="button" @click="save()">
                     <span
                         :class="
@@ -135,6 +146,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR AGPL-3.0-or-later
                     {{ t('cookbook', 'Save') }}
                 </button>
             </div>
+            <AssistantDialog
+                v-if="assistantAvailable"
+                v-model:open="assistantDialogOpen"
+                :recipe="recipeWithCorrectedYield"
+                @applied="applyAssistantUpdate"
+            />
         </div>
         <!-- Recipe editor container -->
     </div>
@@ -155,10 +172,13 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router';
 
 import NcActions from '@nextcloud/vue/components/NcActions';
 import NcActionButton from '@nextcloud/vue/components/NcActionButton';
+import NcButton from '@nextcloud/vue/components/NcButton';
+import { showSuccess } from '@nextcloud/dialogs';
 
 import api from 'cookbook/js/api-interface';
 import helpers from 'cookbook/js/helper';
 import NumericIcon from 'icons/Numeric.vue';
+import CreationIcon from 'icons/Creation.vue';
 import {
     showSimpleAlertModal,
     showSimpleConfirmModal,
@@ -170,10 +190,13 @@ import EditInputGroup from './FormComponents/EditInputGroup.vue';
 import EditMultiselect from './FormComponents/EditMultiselect.vue';
 import EditMultiselectInputGroup from './FormComponents/EditMultiselectInputGroup.vue';
 import EditTimeField from './FormComponents/EditTimeField.vue';
+import AssistantDialog from './Modals/AssistantDialog.vue';
 import LoadingIndicator from './Utilities/LoadingIndicator.vue';
 
 import { useLegacyStore } from '../store';
+import { useAssistant } from '../composables/useAssistant';
 import emitter from '../bus';
+import type { AssistantRecipeUpdate } from '../types/Assistant';
 import type { Recipe } from '../types/Recipe';
 import type { LegacyEditRecipe } from '../types/LegacyEditRecipe';
 import type { RequestError } from '../types/RequestError';
@@ -182,6 +205,7 @@ const t = window.t;
 const log = getCurrentInstance()?.proxy?.$log ?? console;
 const route = useRoute();
 const legacyStore = useLegacyStore() as any;
+const { isAvailable: assistantAvailable, checkAvailability } = useAssistant();
 
 /* prettier-ignore */
 const CONFIRM_MSG = t('cookbook', 'You have unsaved changes! Do you still want to leave?');
@@ -349,6 +373,7 @@ const loadingRecipeReferences = ref(true);
  * @type {import('vue').Ref<boolean>}
  */
 const showRecipeYield = ref(true);
+const assistantDialogOpen = ref(false);
 
 // ===================
 // Computed properties
@@ -697,6 +722,51 @@ const toggleShowRecipeYield = () => {
     formDirty.value = true;
 };
 
+/**
+ * Apply the changes the Nextcloud Assistant made to the recipe in the editor.
+ * The changes are not saved automatically.
+ */
+const applyAssistantUpdate = (update: AssistantRecipeUpdate) => {
+    const r = recipe.value;
+    const { recipeCategory, keywords, recipeYield, ...plainFields } = update;
+    Object.assign(r, plainFields);
+
+    if (recipeCategory !== undefined) {
+        r.recipeCategory = recipeCategory;
+        if (
+            recipeCategory !== '' &&
+            !allCategories.value.includes(recipeCategory)
+        ) {
+            allCategories.value.push(recipeCategory);
+        }
+    }
+
+    if (keywords !== undefined) {
+        const keywordList = keywords
+            .split(',')
+            .map((kw) => kw.trim())
+            .filter((kw) => kw !== '');
+        keywordList.forEach((kw) => {
+            if (!allKeywords.value.includes(kw)) {
+                allKeywords.value.push(kw);
+            }
+        });
+        // The watcher on selectedKeywords updates recipe.keywords
+        selectedKeywords.value = keywordList;
+    }
+
+    if (recipeYield !== undefined) {
+        showRecipeYield.value = !!recipeYield;
+        r.recipeYield = recipeYield ?? '';
+    }
+
+    formDirty.value = true;
+    showSuccess(
+        /* prettier-ignore */
+        t('cookbook', 'The Nextcloud Assistant updated the recipe. Review the changes and save the recipe.'),
+    );
+};
+
 // ===================
 // Vue lifecycle
 // ===================
@@ -729,6 +799,8 @@ onMounted(() => {
     log.info('RecipeEdit mounted');
     window.addEventListener('beforeunload', beforeWindowUnload);
 
+    checkAvailability();
+
     // Store the initial recipe configuration for possible later use
     if (initRecipe.value === null) {
         initRecipe.value = recipe.value;
@@ -744,6 +816,10 @@ onMounted(() => {
     emitter.off('reloadRecipeEdit');
     emitter.on('reloadRecipeEdit', () => {
         loadRecipeData();
+    });
+    emitter.off('openAssistantDialog');
+    emitter.on('openAssistantDialog', () => {
+        assistantDialogOpen.value = true;
     });
     emitter.off('categoryRenamed');
     emitter.on('categoryRenamed', (rawValue) => {
@@ -861,8 +937,12 @@ export default {
 }
 
 .cookbook-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
     margin-top: 3.5em;
-    text-align: end;
+    gap: 8px;
 }
 
 .btn-enable-recipe-yield {

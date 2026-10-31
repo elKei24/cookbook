@@ -18,6 +18,9 @@ vi.mock('cookbook/js/api-interface', () => ({
         },
         categories: { getAll: vi.fn().mockResolvedValue({ data: [] }) },
         keywords: { getAll: vi.fn().mockResolvedValue({ data: [] }) },
+        assistant: {
+            status: vi.fn().mockResolvedValue({ data: { available: false } }),
+        },
     },
 }));
 
@@ -52,7 +55,11 @@ vi.mock('cookbook/js/helper', () => ({
 }));
 
 vi.mock('icons/ContentCopy.vue', () => ({ default: stub }));
+vi.mock('icons/Creation.vue', () => ({ default: stub }));
 vi.mock('icons/Numeric.vue', () => ({ default: stub }));
+vi.mock('cookbook/components/Modals/AssistantDialog.vue', () => ({
+    default: stub,
+}));
 vi.mock('cookbook/components/Utilities/LoadingIndicator.vue', () => ({
     default: stub,
 }));

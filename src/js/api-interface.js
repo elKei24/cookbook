@@ -126,6 +126,22 @@ function reindex() {
     return instance.post(`${baseUrl}/reindex`);
 }
 
+function getAssistantStatus() {
+    return instance.get(`${baseUrl}/assistant`);
+}
+
+function createAssistantTask(recipe, prompt) {
+    return instance.post(`${baseUrl}/assistant/tasks`, { recipe, prompt });
+}
+
+function getAssistantTask(id) {
+    return instance.get(`${baseUrl}/assistant/tasks/${id}`);
+}
+
+function cancelAssistantTask(id) {
+    return instance.delete(`${baseUrl}/assistant/tasks/${id}`);
+}
+
 export default {
     recipes: {
         create: createNewRecipe,
@@ -145,6 +161,12 @@ export default {
     },
     keywords: {
         getAll: getAllKeywords,
+    },
+    assistant: {
+        status: getAssistantStatus,
+        createTask: createAssistantTask,
+        getTask: getAssistantTask,
+        cancelTask: cancelAssistantTask,
     },
     config: {
         get: getConfig,
