@@ -170,7 +170,7 @@ class AssistantService {
 				'recipe' => $this->recipeHelper->parseResponse($text),
 			];
 		} catch (InvalidAssistantResponseException $ex) {
-			$this->logger->warning('The answer of the assistant could not be parsed', ['taskId' => $task->getId(), 'output' => $text]);
+			$this->logger->warning('The answer of the assistant could not be parsed', ['taskId' => $task->getId(), 'exception' => $ex]);
 			return [
 				'status' => self::STATUS_FAILED,
 				'error' => $ex->getMessage(),
