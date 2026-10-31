@@ -39,6 +39,11 @@ return [
 		['name' => 'config#config', 'url' => '/webapp/config', 'verb' => 'POST'],
 		['name' => 'config#reindex', 'url' => '/webapp/reindex', 'verb' => 'POST'],
 
+		['name' => 'assistant#status', 'url' => '/webapp/assistant', 'verb' => 'GET'],
+		['name' => 'assistant#create', 'url' => '/webapp/assistant/tasks', 'verb' => 'POST'],
+		['name' => 'assistant#show', 'url' => '/webapp/assistant/tasks/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'assistant#cancel', 'url' => '/webapp/assistant/tasks/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
 		/* API routes */
 
 		// Generic routes on /api

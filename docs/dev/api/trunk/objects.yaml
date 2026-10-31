@@ -476,3 +476,93 @@ Version:
       $ref: "#/AppVersion"
     api_version:
       $ref: "#/APIVersion"
+
+AssistantStatus:
+  type: object
+  description: The availability of the Nextcloud Assistant for the current user
+  properties:
+    available:
+      type: boolean
+      description: True if the assistant can be used to edit recipes
+      example: true
+  required:
+    - available
+
+AssistantTaskState:
+  type: object
+  description: The state of a task scheduled at the Nextcloud Assistant
+  properties:
+    status:
+      type: string
+      description: >-
+        The current state of the task.
+        Only `successful`, `failed` and `cancelled` are final states.
+      enum:
+        - scheduled
+        - running
+        - successful
+        - failed
+        - cancelled
+      example: successful
+    recipe:
+      description: The updated fields of the recipe. Only present if the status is `successful`.
+      allOf:
+        - $ref: "#/AssistantRecipeUpdate"
+    error:
+      type: string
+      description: A message for the user why the task failed. Only present if the status is `failed`.
+      example: The Nextcloud Assistant could not process the recipe.
+  required:
+    - status
+
+AssistantRecipeUpdate:
+  type: object
+  description: >-
+    The fields of a recipe as changed by the Nextcloud Assistant.
+    Fields that could not be interpreted in the answer of the assistant are omitted.
+  properties:
+    name:
+      type: string
+      example: Pancakes
+    description:
+      type: string
+      example: Fluffy pancakes for breakfast
+    recipeCategory:
+      type: string
+      example: Breakfast
+    keywords:
+      type: string
+      description: Comma-separated list of keywords
+      example: sweet,quick
+    prepTime:
+      type: string
+      description: ISO 8601 duration
+      example: PT0H10M
+    cookTime:
+      type: string
+      description: ISO 8601 duration
+      example: PT0H20M
+    totalTime:
+      type: string
+      description: ISO 8601 duration
+      example: PT0H30M
+    recipeYield:
+      type: string
+      nullable: true
+      description: The number of servings or null if unknown
+      example: '4'
+    tool:
+      type: array
+      items:
+        $ref: "#/Tool"
+    recipeIngredient:
+      type: array
+      items:
+        $ref: "#/Ingredient"
+    recipeInstructions:
+      type: array
+      items:
+        type: string
+        example: Mix the flour with the eggs.
+    nutrition:
+      $ref: "#/Nutrition"
